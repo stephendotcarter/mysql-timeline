@@ -530,6 +530,9 @@ func main() {
 	}
 
 	sort.Slice(timeline, func(i, j int) bool {
+		if timeline[i].Datetime.Equal(timeline[j].Datetime) {
+			return timeline[i].GlobalOrderID < timeline[j].GlobalOrderID
+		}
 		return timeline[i].Datetime.Before(timeline[j].Datetime)
 	})
 
