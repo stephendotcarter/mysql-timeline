@@ -395,6 +395,26 @@ td { font-size: 10pt; }
 				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
+		EventMatcher{
+			"WSREPXid",
+			func(line string) bool {
+				return matchEventSignature(line, `WSREP: Set WSREPXid for InnoDB: `)
+			},
+			func(scanner *bufio.Scanner) *Event {
+				// 2017-06-22 16:50:12 140484737350400 [Note] WSREP: Set WSREPXid for InnoDB:  13f831b9-2d93-11e6-9385-a607db88d15b:36559417
+				lines := scanLines(scanner, 1)
+
+				eventTime := getTimeDefault(lines[0])
+
+				matcher := regexp.MustCompile(`Set WSREPXid for InnoDB:  (.*)`)
+				matches := matcher.FindStringSubmatch(lines[0])
+				xid := matches[1]
+
+				message := fmt.Sprintf("WSREPXid = %s", xid)
+
+				return NewEvent(eventTime, "nodename", message, lines)
+			},
+		},
 	}
 )
 
