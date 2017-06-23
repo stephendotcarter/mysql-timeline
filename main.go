@@ -88,6 +88,25 @@ var (
 		"SYNCED":         90,
 	}
 
+	tmplTimeline = `{{define "Timeline"}}
+<style>
+body{ font-family: Courier New, Courier, monospace; }
+td { font-size: 10pt; }
+.color-node0 { background: #D9B3FF; }
+.color-node1 { background: #B3B3FF; }
+.color-node2 { background: #B3D9FF; }
+</style>
+<table border="1">
+<thead>
+<th>Node</th><th>Date</th><th>Message</th>
+</thead>
+{{ range $event := .Timeline }}
+<tr class="color-{{ $event.Node }}"><td>{{ $event.Node }}</td><td>{{ $event.Datetime }}</td><td>{{ $event.Message }}</td>
+</tr>
+{{ end }}
+</table>
+{{end}}`
+
 	// Event matchers for all know events
 	eventMatchers = []EventMatcher{
 		EventMatcher{
@@ -455,7 +474,7 @@ func getEventsFromNode(node string, filePath string) []*Event {
 
 func renderHTML(timeline []*Event) string {
 	html := ""
-	t, err := template.New("foo").ParseFiles("tmpl/timeline.html") // Parse template file.
+	t, err := template.New("foo").Parse(tmplTimeline)
 	if err != nil {
 		panic(err)
 	}
