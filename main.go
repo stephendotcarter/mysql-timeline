@@ -21,10 +21,11 @@ import (
 //   - User friendly message
 //   - Raw log lines
 type Event struct {
-	Datetime time.Time
-	Node     string
-	Message  string
-	Raw      string
+	Datetime      time.Time
+	GlobalOrderID int
+	Node          string
+	Message       string
+	Raw           string
 }
 
 // EventMatcher represents whats needed to find an event MySQL logs
@@ -34,7 +35,22 @@ type Event struct {
 type EventMatcher struct {
 	Description string
 	Match       func(string) bool
-	Get         func(*bufio.Scanner) Event
+	Get         func(*bufio.Scanner) *Event
+}
+
+func NewEvent(eventTime time.Time, node string, message string, raw []string) *Event {
+	//os.Stderr.WriteString("NewEvent\n")
+	//fmt.Println(message)
+	globalOrderID++
+
+	return &Event{
+		eventTime,
+		globalOrderID,
+		node,
+		message,
+		strings.Join(raw[:], "\n"),
+	}
+
 }
 
 func matchEventSignature(line string, signature string) bool {
@@ -42,6 +58,8 @@ func matchEventSignature(line string, signature string) bool {
 }
 
 var (
+	globalOrderID = 0 // Used to ensure timestamps within same second are ordered correctly
+
 	printYellow  = color.New(color.FgYellow).SprintFunc()
 	printRed     = color.New(color.FgRed).SprintFunc()
 	printBlue    = color.New(color.FgBlue).SprintFunc()
@@ -77,7 +95,7 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, `WSREP: Shifting`)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// 2015-10-28 16:36:52 10144 [Note] WSREP: Shifting PRIMARY -> JOINER (TO: 31389)
 				lines := scanLines(scanner, 1)
 				eventTime := getTimeDefault(lines[0])
@@ -93,12 +111,7 @@ var (
 					message = message + printGreen(matches[2])
 				}
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
@@ -106,7 +119,7 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, `WSREP: Quorum results:`)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// 2015-10-28 14:28:50 553 [Note] WSREP: Quorum results:
 				//     version    = 3,
 				//     component  = PRIMARY,
@@ -145,12 +158,7 @@ var (
 				}
 				message += fmt.Sprintf("Members: %s", membersString)
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
@@ -158,7 +166,7 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, `WSREP: State transfer required:`)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// 2015-10-28 16:36:51 10144 [Note] WSREP: State transfer required:
 				//     Group state: 98ed75de-7c05-11e5-9743-de4abc22bd11:31382
 				//     Local state: 98ed75de-7c05-11e5-9743-de4abc22bd11:11152
@@ -178,12 +186,7 @@ var (
 
 				message := fmt.Sprintf("Group: %s, Local: %s", groupStateString, localStateString)
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
@@ -191,7 +194,7 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, `WSREP: Recovered position `)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// 2017-06-14 14:02:28 139993574066048 [Note] WSREP: Recovered position f3d1aa70-31a3-11e7-908c-f7a5ad9e63b1:40847697
 				lines := scanLines(scanner, 1)
 				eventTime := getTimeMysqld(lines[0])
@@ -210,12 +213,7 @@ var (
 
 				message := fmt.Sprintf("Recovered position: %s", recoveredString)
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
@@ -223,7 +221,7 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, `SST disabled due to danger of data loss`)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// WSREP_SST: [ERROR] ############################################################################## (20170506 15:14:06.901)
 				// WSREP_SST: [ERROR] SST disabled due to danger of data loss. Verify data and bootstrap the cluster (20170506 15:14:06.902)
 				// WSREP_SST: [ERROR] ############################################################################## (20170506 15:14:06.904)
@@ -232,12 +230,7 @@ var (
 
 				message := printRed(`++++++++++ Interruptor ++++++++++`)
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
@@ -245,19 +238,14 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, ` from pid file `)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// 170505 14:35:47 mysqld_safe mysqld from pid file /tmp/tmp-mysql.pid ended
 				lines := scanLines(scanner, 1)
 
 				eventTime := getTimeMysqld(lines[0])
 				message := "PID ended"
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
@@ -265,19 +253,14 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, `mysqld: Normal shutdown`)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-05 14:35:45 139716968405760 [Note] /var/vcap/packages/mariadb/bin/mysqld: Normal shutdown
 				lines := scanLines(scanner, 1)
 
 				eventTime := getTimeDefault(lines[0])
 				message := "Normal Shutdown"
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
@@ -285,19 +268,14 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, `starting as process`)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-06 16:53:13 140445682804608 [Note] /var/vcap/packages/mariadb/bin/mysqld (mysqld 10.1.18-MariaDB) starting as process 24588 ...
 				lines := scanLines(scanner, 1)
 
 				eventTime := getTimeDefault(lines[0])
 				message := "MySQL startup"
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
@@ -305,19 +283,14 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, `InnoDB: Starting shutdown...`)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-06 16:53:08 140348661906176 [Note] InnoDB: Starting shutdown...
 				lines := scanLines(scanner, 1)
 
 				eventTime := getTimeDefault(lines[0])
 				message := "InnoDB shutdown"
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
@@ -325,19 +298,14 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, `mysqld: Shutdown complete`)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-05 14:35:47 139716968405760 [Note] /var/vcap/packages/mariadb/bin/mysqld: Shutdown complete
 				lines := scanLines(scanner, 1)
 
 				eventTime := getTimeDefault(lines[0])
 				message := "MySQL shutdown complete"
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
@@ -345,19 +313,14 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, `WSREP: no nodes coming from prim view`)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-05  6:50:37 140137601001344 [Warning] WSREP: no nodes coming from prim view, prim not possible
 				lines := scanLines(scanner, 1)
 
 				eventTime := getTimeDefault(lines[0])
 				message := "Primary not possible"
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
@@ -365,7 +328,7 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, `WSREP: view\(`)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// 2017-06-14 10:11:35 139887269365504 [Note] WSREP: view(view_id(NON_PRIM,55433460,408) memb {
 				lines := scanLines(scanner, 1)
 
@@ -382,12 +345,7 @@ var (
 
 				message := fmt.Sprintf("WSREP view => %s", view)
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
@@ -395,7 +353,7 @@ var (
 			func(line string) bool {
 				return matchEventSignature(line, `WSREP: Running: `)
 			},
-			func(scanner *bufio.Scanner) Event {
+			func(scanner *bufio.Scanner) *Event {
 				// 2017-06-14 19:10:58 140682204215040 [Note] WSREP: Running: 'wsrep_sst_xtrabackup-v2 --role 'joiner' --address '10.19.148.90' --datadir '/var/vcap/store/mysql/'   --parent '32691' --binlog 'mysql-bin' '
 				lines := scanLines(scanner, 1)
 
@@ -415,12 +373,7 @@ var (
 					message = "Oops :-o"
 				}
 
-				return Event{
-					eventTime,
-					"nodename",
-					message,
-					strings.Join(lines[:], "\n"),
-				}
+				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 	}
@@ -475,9 +428,9 @@ func scanLines(scanner *bufio.Scanner, count int) []string {
 	}
 }
 
-func getEventsFromNode(node string, filePath string) []Event {
+func getEventsFromNode(node string, filePath string) []*Event {
 	//fmt.Printf("Getting events from %s\n", node)
-	var events []Event
+	var events []*Event
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -500,7 +453,7 @@ func getEventsFromNode(node string, filePath string) []Event {
 	return events
 }
 
-func renderHTML(timeline []Event) string {
+func renderHTML(timeline []*Event) string {
 	html := ""
 	t, err := template.New("foo").ParseFiles("tmpl/timeline.html") // Parse template file.
 	if err != nil {
@@ -508,7 +461,7 @@ func renderHTML(timeline []Event) string {
 	}
 
 	type renderData struct {
-		Timeline []Event
+		Timeline []*Event
 	}
 
 	data := renderData{
@@ -530,7 +483,7 @@ func main() {
 
 	var files = parseArgs()
 
-	var timeline []Event
+	var timeline []*Event
 
 	for i, filePath := range files {
 		node := fmt.Sprintf("node%d", i)
