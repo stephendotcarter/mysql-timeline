@@ -526,9 +526,11 @@ func main() {
 
 	for i, filePath := range files {
 		node := fmt.Sprintf("node%d", i)
+		os.Stderr.WriteString("Parsing node\n")
 		timeline = append(timeline, getEventsFromNode(node, filePath)...)
 	}
 
+	os.Stderr.WriteString("Sorting\n")
 	sort.Slice(timeline, func(i, j int) bool {
 		if timeline[i].Datetime.Equal(timeline[j].Datetime) {
 			return timeline[i].GlobalOrderID < timeline[j].GlobalOrderID
@@ -536,8 +538,10 @@ func main() {
 		return timeline[i].Datetime.Before(timeline[j].Datetime)
 	})
 
+	os.Stderr.WriteString("Rendering\n")
 	html := renderHTML(timeline)
 
+	os.Stderr.WriteString("Printing\n")
 	fmt.Println(html)
 
 	/*
