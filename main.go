@@ -38,8 +38,7 @@ type EventMatcher struct {
 }
 
 func matchEventSignature(line string, signature string) bool {
-	match, _ := regexp.MatchString(signature, line)
-	return match
+	return strings.Contains(line, signature)
 }
 
 var (
