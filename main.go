@@ -149,8 +149,8 @@ td { font-size: 10pt; }
 				//     protocols  = 0/7/3 (gcs/repl/appl),
 				//     group UUID = 98ed75de-7c05-11e5-9743-de4abc22bd11
 				lines := scanLines(scanner, 9)
-
 				eventTime := getTimeDefault(lines[0])
+
 				matcher := regexp.MustCompile(`component  = (.*),`)
 				matches := matcher.FindStringSubmatch(lines[2])
 				component := matches[1]
@@ -159,15 +159,12 @@ td { font-size: 10pt; }
 				membersJoined := matches[1]
 				membersTotal := matches[2]
 
-				message := ""
-
 				componentString := component
 				if component == "PRIMARY" {
 					componentString = printGreen(componentString)
 				} else {
 					componentString = printRed(componentString)
 				}
-				message += fmt.Sprintf("Component: %s, ", componentString)
 
 				membersString := fmt.Sprintf("%s/%s", membersJoined, membersTotal)
 				if membersJoined == membersTotal {
@@ -175,7 +172,8 @@ td { font-size: 10pt; }
 				} else {
 					membersString = printRed(membersString)
 				}
-				message += fmt.Sprintf("Members: %s", membersString)
+
+				message = fmt.Sprintf("Component: %s, Members: %s", componentString, membersString)
 
 				return NewEvent(eventTime, "nodename", message, lines)
 			},
@@ -260,8 +258,8 @@ td { font-size: 10pt; }
 			func(scanner *bufio.Scanner) *Event {
 				// 170505 14:35:47 mysqld_safe mysqld from pid file /tmp/tmp-mysql.pid ended
 				lines := scanLines(scanner, 1)
-
 				eventTime := getTimeMysqld(lines[0])
+
 				message := "PID ended"
 
 				return NewEvent(eventTime, "nodename", message, lines)
@@ -275,8 +273,8 @@ td { font-size: 10pt; }
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-05 14:35:45 139716968405760 [Note] /var/vcap/packages/mariadb/bin/mysqld: Normal shutdown
 				lines := scanLines(scanner, 1)
-
 				eventTime := getTimeDefault(lines[0])
+
 				message := "Normal Shutdown"
 
 				return NewEvent(eventTime, "nodename", message, lines)
@@ -290,8 +288,8 @@ td { font-size: 10pt; }
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-06 16:53:13 140445682804608 [Note] /var/vcap/packages/mariadb/bin/mysqld (mysqld 10.1.18-MariaDB) starting as process 24588 ...
 				lines := scanLines(scanner, 1)
-
 				eventTime := getTimeDefault(lines[0])
+
 				message := "MySQL startup"
 
 				return NewEvent(eventTime, "nodename", message, lines)
@@ -305,8 +303,8 @@ td { font-size: 10pt; }
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-06 16:53:08 140348661906176 [Note] InnoDB: Starting shutdown...
 				lines := scanLines(scanner, 1)
-
 				eventTime := getTimeDefault(lines[0])
+
 				message := "InnoDB shutdown"
 
 				return NewEvent(eventTime, "nodename", message, lines)
@@ -320,8 +318,8 @@ td { font-size: 10pt; }
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-05 14:35:47 139716968405760 [Note] /var/vcap/packages/mariadb/bin/mysqld: Shutdown complete
 				lines := scanLines(scanner, 1)
-
 				eventTime := getTimeDefault(lines[0])
+
 				message := "MySQL shutdown complete"
 
 				return NewEvent(eventTime, "nodename", message, lines)
@@ -335,8 +333,8 @@ td { font-size: 10pt; }
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-05  6:50:37 140137601001344 [Warning] WSREP: no nodes coming from prim view, prim not possible
 				lines := scanLines(scanner, 1)
-
 				eventTime := getTimeDefault(lines[0])
+
 				message := "Primary not possible"
 
 				return NewEvent(eventTime, "nodename", message, lines)
@@ -375,7 +373,6 @@ td { font-size: 10pt; }
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-06-14 19:10:58 140682204215040 [Note] WSREP: Running: 'wsrep_sst_xtrabackup-v2 --role 'joiner' --address '10.19.148.90' --datadir '/var/vcap/store/mysql/'   --parent '32691' --binlog 'mysql-bin' '
 				lines := scanLines(scanner, 1)
-
 				eventTime := getTimeDefault(lines[0])
 
 				matcher := regexp.MustCompile(`--role '(.*)' --address '(.*?)' --`)
@@ -403,7 +400,6 @@ td { font-size: 10pt; }
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-06-22 16:50:12 140484737350400 [Note] WSREP: Set WSREPXid for InnoDB:  13f831b9-2d93-11e6-9385-a607db88d15b:36559417
 				lines := scanLines(scanner, 1)
-
 				eventTime := getTimeDefault(lines[0])
 
 				matcher := regexp.MustCompile(`Set WSREPXid for InnoDB:  (.*)`)
@@ -543,23 +539,4 @@ func main() {
 
 	os.Stderr.WriteString("Printing\n")
 	fmt.Println(html)
-
-	/*
-		for _, event := range timeline {
-			header := ""
-			switch event.Node {
-			case "node 0":
-				header = printBlue(fmt.Sprintf("%s %s", event.Node, event.Datetime))
-			case "node 1":
-				header = printMagenta(fmt.Sprintf("%s %s", event.Node, event.Datetime))
-			case "node 2":
-				header = printCyan(fmt.Sprintf("%s %s", event.Node, event.Datetime))
-			}
-
-			fmt.Printf("%s %s\n",
-				header,
-				event.Message,
-			)
-		}
-	*/
 }
