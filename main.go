@@ -34,7 +34,7 @@ type Event struct {
 //   - Function to convert the raw text to an event
 type EventMatcher struct {
 	Description string
-	Match       func(string) bool
+	Signature   string
 	Get         func(*bufio.Scanner) *Event
 }
 
@@ -53,8 +53,8 @@ func NewEvent(eventTime time.Time, node string, message string, raw []string) *E
 
 }
 
-func matchEventSignature(line string, signature string) bool {
-	return strings.Contains(line, signature)
+func (e *EventMatcher) Match(line string) bool {
+	return strings.Contains(line, e.Signature)
 }
 
 var (
@@ -111,9 +111,7 @@ td { font-size: 10pt; }
 	eventMatchers = []EventMatcher{
 		EventMatcher{
 			"Node is changing state",
-			func(line string) bool {
-				return matchEventSignature(line, `WSREP: Shifting`)
-			},
+			"WSREP: Shifting",
 			func(scanner *bufio.Scanner) *Event {
 				// 2015-10-28 16:36:52 10144 [Note] WSREP: Shifting PRIMARY -> JOINER (TO: 31389)
 				lines := scanLines(scanner, 1)
@@ -135,9 +133,7 @@ td { font-size: 10pt; }
 		},
 		EventMatcher{
 			"Quorum results",
-			func(line string) bool {
-				return matchEventSignature(line, `WSREP: Quorum results:`)
-			},
+			"WSREP: Quorum results:",
 			func(scanner *bufio.Scanner) *Event {
 				// 2015-10-28 14:28:50 553 [Note] WSREP: Quorum results:
 				//     version    = 3,
@@ -173,16 +169,14 @@ td { font-size: 10pt; }
 					membersString = printRed(membersString)
 				}
 
-				message = fmt.Sprintf("Component: %s, Members: %s", componentString, membersString)
+				message := fmt.Sprintf("Component: %s, Members: %s", componentString, membersString)
 
 				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
 		EventMatcher{
 			"State Transfer Required",
-			func(line string) bool {
-				return matchEventSignature(line, `WSREP: State transfer required:`)
-			},
+			"WSREP: State transfer required:",
 			func(scanner *bufio.Scanner) *Event {
 				// 2015-10-28 16:36:51 10144 [Note] WSREP: State transfer required:
 				//     Group state: 98ed75de-7c05-11e5-9743-de4abc22bd11:31382
@@ -208,9 +202,7 @@ td { font-size: 10pt; }
 		},
 		EventMatcher{
 			"WSREP recovered position",
-			func(line string) bool {
-				return matchEventSignature(line, `WSREP: Recovered position `)
-			},
+			"WSREP: Recovered position ",
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-06-14 14:02:28 139993574066048 [Note] WSREP: Recovered position f3d1aa70-31a3-11e7-908c-f7a5ad9e63b1:40847697
 				lines := scanLines(scanner, 1)
@@ -235,9 +227,7 @@ td { font-size: 10pt; }
 		},
 		EventMatcher{
 			"Interruptor",
-			func(line string) bool {
-				return matchEventSignature(line, `SST disabled due to danger of data loss`)
-			},
+			"SST disabled due to danger of data loss",
 			func(scanner *bufio.Scanner) *Event {
 				// WSREP_SST: [ERROR] ############################################################################## (20170506 15:14:06.901)
 				// WSREP_SST: [ERROR] SST disabled due to danger of data loss. Verify data and bootstrap the cluster (20170506 15:14:06.902)
@@ -252,9 +242,7 @@ td { font-size: 10pt; }
 		},
 		EventMatcher{
 			"MySQL ended",
-			func(line string) bool {
-				return matchEventSignature(line, ` from pid file `)
-			},
+			" from pid file ",
 			func(scanner *bufio.Scanner) *Event {
 				// 170505 14:35:47 mysqld_safe mysqld from pid file /tmp/tmp-mysql.pid ended
 				lines := scanLines(scanner, 1)
@@ -267,9 +255,7 @@ td { font-size: 10pt; }
 		},
 		EventMatcher{
 			"MySQL normal shutdown",
-			func(line string) bool {
-				return matchEventSignature(line, `mysqld: Normal shutdown`)
-			},
+			"mysqld: Normal shutdown",
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-05 14:35:45 139716968405760 [Note] /var/vcap/packages/mariadb/bin/mysqld: Normal shutdown
 				lines := scanLines(scanner, 1)
@@ -282,9 +268,7 @@ td { font-size: 10pt; }
 		},
 		EventMatcher{
 			"MySQL startup",
-			func(line string) bool {
-				return matchEventSignature(line, `starting as process`)
-			},
+			"starting as process",
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-06 16:53:13 140445682804608 [Note] /var/vcap/packages/mariadb/bin/mysqld (mysqld 10.1.18-MariaDB) starting as process 24588 ...
 				lines := scanLines(scanner, 1)
@@ -297,9 +281,7 @@ td { font-size: 10pt; }
 		},
 		EventMatcher{
 			"InnoDB shutdown",
-			func(line string) bool {
-				return matchEventSignature(line, `InnoDB: Starting shutdown...`)
-			},
+			"InnoDB: Starting shutdown...",
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-06 16:53:08 140348661906176 [Note] InnoDB: Starting shutdown...
 				lines := scanLines(scanner, 1)
@@ -312,9 +294,7 @@ td { font-size: 10pt; }
 		},
 		EventMatcher{
 			"InnoDB shutdown complete",
-			func(line string) bool {
-				return matchEventSignature(line, `mysqld: Shutdown complete`)
-			},
+			"mysqld: Shutdown complete",
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-05 14:35:47 139716968405760 [Note] /var/vcap/packages/mariadb/bin/mysqld: Shutdown complete
 				lines := scanLines(scanner, 1)
@@ -327,9 +307,7 @@ td { font-size: 10pt; }
 		},
 		EventMatcher{
 			"Primary not possible",
-			func(line string) bool {
-				return matchEventSignature(line, `WSREP: no nodes coming from prim view`)
-			},
+			"WSREP: no nodes coming from prim view",
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-05-05  6:50:37 140137601001344 [Warning] WSREP: no nodes coming from prim view, prim not possible
 				lines := scanLines(scanner, 1)
@@ -342,9 +320,7 @@ td { font-size: 10pt; }
 		},
 		EventMatcher{
 			"Cluster View",
-			func(line string) bool {
-				return matchEventSignature(line, `WSREP: view\(`)
-			},
+			"WSREP: view(",
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-06-14 10:11:35 139887269365504 [Note] WSREP: view(view_id(NON_PRIM,55433460,408) memb {
 				lines := scanLines(scanner, 1)
@@ -367,9 +343,7 @@ td { font-size: 10pt; }
 		},
 		EventMatcher{
 			"xtrabackup",
-			func(line string) bool {
-				return matchEventSignature(line, `WSREP: Running: `)
-			},
+			"WSREP: Running: ",
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-06-14 19:10:58 140682204215040 [Note] WSREP: Running: 'wsrep_sst_xtrabackup-v2 --role 'joiner' --address '10.19.148.90' --datadir '/var/vcap/store/mysql/'   --parent '32691' --binlog 'mysql-bin' '
 				lines := scanLines(scanner, 1)
@@ -394,9 +368,7 @@ td { font-size: 10pt; }
 		},
 		EventMatcher{
 			"WSREPXid",
-			func(line string) bool {
-				return matchEventSignature(line, `WSREP: Set WSREPXid for InnoDB: `)
-			},
+			"WSREP: Set WSREPXid for InnoDB: ",
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-06-22 16:50:12 140484737350400 [Note] WSREP: Set WSREPXid for InnoDB:  13f831b9-2d93-11e6-9385-a607db88d15b:36559417
 				lines := scanLines(scanner, 1)
