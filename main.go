@@ -91,7 +91,7 @@ var (
 	tmplTimeline = `{{define "Timeline"}}
 <style>
 body{ font-family: Courier New, Courier, monospace; }
-td { font-size: 10pt; }
+td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
 .color-node0 { background: #D9B3FF; }
 .color-node1 { background: #B3B3FF; }
 .color-node2 { background: #B3D9FF; }
@@ -101,8 +101,7 @@ td { font-size: 10pt; }
 <th>Node</th><th>Date</th><th>Message</th>
 </thead>
 {{ range $event := .Timeline }}
-<tr class="color-{{ $event.Node }}"><td>{{ $event.Node }}</td><td>{{ $event.Datetime }}</td><td>{{ $event.Message }}</td>
-</tr>
+<tr class="color-{{ $event.Node }}"><td>{{ $event.Node }}</td><td>{{ $event.Datetime }}</td><td>{{ $event.Message }}</td></tr>
 {{ end }}
 </table>
 {{end}}`
@@ -195,7 +194,7 @@ td { font-size: 10pt; }
 					localStateString = printGreen(localStateString)
 				}
 
-				message := fmt.Sprintf("Group: %s, Local: %s", groupStateString, localStateString)
+				message := fmt.Sprintf("Group: %s\nLocal: %s", groupStateString, localStateString)
 
 				return NewEvent(eventTime, "nodename", message, lines)
 			},
