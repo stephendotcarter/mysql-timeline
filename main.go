@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"html/template"
 	"log"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/fatih/color"
@@ -57,13 +57,19 @@ func (e *EventMatcher) Match(line string) bool {
 	return strings.Contains(line, e.Signature)
 }
 
+func printDanger(line string) string {
+	return fmt.Sprintf("<danger>%s</danger>", line)
+}
+
+func printSuccess(line string) string {
+	return fmt.Sprintf("<success>%s</success>", line)
+}
+
 var (
 	globalOrderID = 0 // Used to ensure timestamps within same second are ordered correctly
 
 	printYellow  = color.New(color.FgYellow).SprintFunc()
-	printRed     = color.New(color.FgRed).SprintFunc()
 	printBlue    = color.New(color.FgBlue).SprintFunc()
-	printGreen   = color.New(color.FgGreen).SprintFunc()
 	printMagenta = color.New(color.FgMagenta).SprintFunc()
 	printCyan    = color.New(color.FgCyan).SprintFunc()
 
@@ -72,6 +78,7 @@ var (
 	timeFormatDefault  = "2006-01-02 15:04:05"
 	timeFormatWsrepSst = "20060102 15:04:05"
 	timeFormatMysqld   = "060102 15:04:05"
+	timeFormatYMDHMS   = "20060102150405"
 
 	// Give each state a numeric value so shifts
 	// to a lower state can be flagged
@@ -95,6 +102,8 @@ td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
 .color-node0 { background: #D9B3FF; }
 .color-node1 { background: #B3B3FF; }
 .color-node2 { background: #B3D9FF; }
+success { color: #5cb85c; font-weight: bold; }
+danger { color: #d9534f; font-weight: bold; }
 </style>
 <table border="1">
 <thead>
@@ -122,9 +131,9 @@ td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
 				message := fmt.Sprintf("  %s => ", matches[1])
 
 				if shiftState[matches[1]] > shiftState[matches[2]] {
-					message = message + printRed(matches[2])
+					message = message + printDanger(matches[2])
 				} else {
-					message = message + printGreen(matches[2])
+					message = message + printSuccess(matches[2])
 				}
 
 				return NewEvent(eventTime, "nodename", message, lines)
@@ -156,16 +165,16 @@ td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
 
 				componentString := component
 				if component == "PRIMARY" {
-					componentString = printGreen(componentString)
+					componentString = printSuccess(componentString)
 				} else {
-					componentString = printRed(componentString)
+					componentString = printDanger(componentString)
 				}
 
 				membersString := fmt.Sprintf("%s/%s", membersJoined, membersTotal)
 				if membersJoined == membersTotal {
-					membersString = printGreen(membersString)
+					membersString = printSuccess(membersString)
 				} else {
-					membersString = printRed(membersString)
+					membersString = printDanger(membersString)
 				}
 
 				message := fmt.Sprintf("Component: %s, Members: %s", componentString, membersString)
@@ -189,9 +198,9 @@ td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
 				groupStateString := fmt.Sprintf("%s:%s", strings.Trim(groupState[1], " "), strings.Trim(groupState[2], " "))
 				localStateString := fmt.Sprintf("%s:%s", strings.Trim(localState[1], " "), strings.Trim(localState[2], " "))
 				if localState[2] == "-1" {
-					localStateString = printRed(localStateString)
+					localStateString = printDanger(localStateString)
 				} else {
-					localStateString = printGreen(localStateString)
+					localStateString = printSuccess(localStateString)
 				}
 
 				message := fmt.Sprintf("Group: %s\nLocal: %s", groupStateString, localStateString)
@@ -214,9 +223,9 @@ td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
 
 				recoveredString := fmt.Sprintf("%s:%s", uuid, seqno)
 				if seqno == "-1" {
-					recoveredString = printRed(recoveredString)
+					recoveredString = printDanger(recoveredString)
 				} else {
-					recoveredString = printGreen(recoveredString)
+					recoveredString = printSuccess(recoveredString)
 				}
 
 				message := fmt.Sprintf("Recovered position: %s", recoveredString)
@@ -234,7 +243,7 @@ td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
 				lines := scanLines(scanner, 1)
 				eventTime := getTimeWsrepSst(lines[0])
 
-				message := printRed(`++++++++++ Interruptor ++++++++++`)
+				message := printDanger(`++++++++++ Interruptor ++++++++++`)
 
 				return NewEvent(eventTime, "nodename", message, lines)
 			},
@@ -247,7 +256,7 @@ td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
 				lines := scanLines(scanner, 1)
 				eventTime := getTimeMysqld(lines[0])
 
-				message := "PID ended"
+				message := printDanger("PID ended")
 
 				return NewEvent(eventTime, "nodename", message, lines)
 			},
@@ -260,7 +269,7 @@ td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
 				lines := scanLines(scanner, 1)
 				eventTime := getTimeDefault(lines[0])
 
-				message := "Normal Shutdown"
+				message := printSuccess("Normal Shutdown")
 
 				return NewEvent(eventTime, "nodename", message, lines)
 			},
