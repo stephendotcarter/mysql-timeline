@@ -391,6 +391,19 @@ danger { color: #d9534f; font-weight: bold; }
 				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
+		EventMatcher{
+			"Node consistency compromized",
+			"WSREP: Node consistency compromized",
+			func(scanner *bufio.Scanner) *Event {
+				// 2017-06-14  8:01:24 140433225386752 [ERROR] WSREP: Node consistency compromized, aborting...
+				lines := scanLines(scanner, 1)
+				eventTime := getTimeDefault(lines[0])
+
+				message := printDanger("Node consistency compromized")
+
+				return NewEvent(eventTime, "nodename", message, lines)
+			},
+		},
 	}
 )
 
