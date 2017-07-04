@@ -11,8 +11,6 @@ import (
 	"strings"
 	"text/template"
 	"time"
-
-	"github.com/fatih/color"
 )
 
 // Event is an interesting event that occurred in MySQL logs
@@ -67,13 +65,6 @@ func printSuccess(line string) string {
 
 var (
 	globalOrderID = 0 // Used to ensure timestamps within same second are ordered correctly
-
-	printYellow  = color.New(color.FgYellow).SprintFunc()
-	printBlue    = color.New(color.FgBlue).SprintFunc()
-	printMagenta = color.New(color.FgMagenta).SprintFunc()
-	printCyan    = color.New(color.FgCyan).SprintFunc()
-
-	nodeColors = make([]interface{}, 3, 3)
 
 	timeFormatDefault  = "2006-01-02 15:04:05"
 	timeFormatWsrepSst = "20060102 15:04:05"
