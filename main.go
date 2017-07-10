@@ -98,8 +98,7 @@ danger { color: #d9534f; font-weight: bold; }
 <thead>
 <th>Node</th><th>Date</th><th>Message</th>
 </thead>
-{{ range $event := .Timeline }}
-<tr class="color-{{ $event.Node }}"><td>{{ $event.Node }}</td><td>{{ $event.Datetime }}</td><td>{{ $event.Message }}</td></tr>
+{{ range $event := .Timeline }}<tr class="color-{{ $event.Node }}"><td>{{ $event.Node }}</td><td>{{ $event.Datetime }}</td><td>{{ $event.Message }}</td></tr>
 {{ end }}
 </table>
 {{end}}`
