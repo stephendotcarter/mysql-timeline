@@ -37,8 +37,6 @@ type EventMatcher struct {
 }
 
 func NewEvent(eventTime time.Time, node string, message string, raw []string) *Event {
-	//os.Stderr.WriteString("NewEvent\n")
-	//fmt.Println(message)
 	globalOrderID++
 
 	return &Event{
@@ -484,7 +482,6 @@ func scanLines(scanner *bufio.Scanner, count int) []string {
 }
 
 func getEventsFromNode(node string, filePath string) []*Event {
-	//fmt.Printf("Getting events from %s\n", node)
 	var events []*Event
 
 	file, err := os.Open(filePath)
