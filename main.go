@@ -395,6 +395,42 @@ danger { color: #d9534f; font-weight: bold; }
 				return NewEvent(eventTime, "nodename", message, lines)
 			},
 		},
+		EventMatcher{
+			"Slave SQL Error",
+			" Slave SQL: Error",
+			func(scanner *bufio.Scanner) *Event {
+				// 2017-03-24 10:25:00 140656657582848 [ERROR] Slave SQL: Error 'Table 'cf_f08ec188_bbf7_4a27_a001_97749f736849.COL1' doesn't exist' on query. Default database: 'cf_f08ec188_bbf7_4a27_a001_97749f736849'. Query: 'alter table COL1 drop foreign key FK8kw677hwx7cgwi4g1r6c56398', Internal MariaDB error code: 1146
+				lines := scanLines(scanner, 1)
+				eventTime := getTimeDefault(lines[0])
+
+				//matcher := regexp.MustCompile(`Slave SQL: (Error.*), Internal MariaDB error code: (.*)`)
+				//matches := matcher.FindStringSubmatch(lines[0])
+				//error := matches[1]
+				//code := matches[2]
+
+				//message := fmt.Sprintf("%s\n%s", error, code)
+				message := printDanger("Slave SQL Error")
+
+				return NewEvent(eventTime, "nodename", message, lines)
+			},
+		},
+		EventMatcher{
+			"Fatal Error",
+			" Fatal error:",
+			func(scanner *bufio.Scanner) *Event {
+				// 2017-05-06 14:51:43 139983057127296 [ERROR] Fatal error: Can't open and lock privilege tables: Table 'mysql.user' doesn't exist
+				lines := scanLines(scanner, 1)
+				eventTime := getTimeDefault(lines[0])
+
+				matcher := regexp.MustCompile(` Fatal error: (.*)`)
+				matches := matcher.FindStringSubmatch(lines[0])
+				fatalError := matches[1]
+
+				message := fmt.Sprintf(printDanger("Fatal Error: %s"), fatalError)
+
+				return NewEvent(eventTime, "nodename", message, lines)
+			},
+		},
 	}
 )
 
