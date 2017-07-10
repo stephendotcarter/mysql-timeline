@@ -501,6 +501,7 @@ func getEventsFromNode(node string, filePath string) []*Event {
 				event := eventMatcher.Get(scanner)
 				event.Node = node
 				events = append(events, event)
+				break
 			}
 		}
 	}
