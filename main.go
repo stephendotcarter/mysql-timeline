@@ -366,7 +366,7 @@ danger { color: #d9534f; font-weight: bold; }
 			},
 		},
 		EventMatcher{
-			"WSREPXid",
+			"WSREP Transaction ID",
 			"WSREP: Set WSREPXid for InnoDB: ",
 			func(scanner *bufio.Scanner) *Event {
 				// 2017-06-22 16:50:12 140484737350400 [Note] WSREP: Set WSREPXid for InnoDB:  13f831b9-2d93-11e6-9385-a607db88d15b:36559417
