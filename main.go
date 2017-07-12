@@ -116,7 +116,7 @@ danger { color: #d9534f; font-weight: bold; }
 				matcher := regexp.MustCompile(` Shifting (.*) -> (.*) \(TO: ([0-9]*\))`)
 				matches := matcher.FindStringSubmatch(lines[0])
 
-				message := fmt.Sprintf("%s => ", matches[1])
+				message := fmt.Sprintf("Shifting %s => ", matches[1])
 
 				if shiftState[matches[1]] > shiftState[matches[2]] {
 					message = message + printDanger(matches[2])
@@ -165,7 +165,7 @@ danger { color: #d9534f; font-weight: bold; }
 					membersString = printDanger(membersString)
 				}
 
-				message := fmt.Sprintf("Component: %s, Members: %s", componentString, membersString)
+				message := fmt.Sprintf("Quorum results: Component = %s, Members = %s", componentString, membersString)
 
 				return NewEvent(eventTime, 0, message, lines)
 			},
@@ -191,7 +191,7 @@ danger { color: #d9534f; font-weight: bold; }
 					localStateString = printSuccess(localStateString)
 				}
 
-				message := fmt.Sprintf("Group: %s\nLocal: %s", groupStateString, localStateString)
+				message := fmt.Sprintf("State transfer required:\n\tGroup: %s\n\tLocal: %s", groupStateString, localStateString)
 
 				return NewEvent(eventTime, 0, message, lines)
 			},
@@ -270,7 +270,7 @@ danger { color: #d9534f; font-weight: bold; }
 				lines := scanLines(scanner, 1)
 				eventTime := getTimeDefault(lines[0])
 
-				message := "MySQL startup"
+				message := "MySQL starting up"
 
 				return NewEvent(eventTime, 0, message, lines)
 			},
@@ -283,7 +283,7 @@ danger { color: #d9534f; font-weight: bold; }
 				lines := scanLines(scanner, 1)
 				eventTime := getTimeDefault(lines[0])
 
-				message := "InnoDB shutdown"
+				message := "InnoDB shutting down"
 
 				return NewEvent(eventTime, 0, message, lines)
 			},
@@ -332,7 +332,7 @@ danger { color: #d9534f; font-weight: bold; }
 					view = matches[1]
 				}
 
-				message := fmt.Sprintf("WSREP view => %s", view)
+				message := fmt.Sprintf("Cluster view => %s", view)
 
 				return NewEvent(eventTime, 0, message, lines)
 			},
@@ -352,9 +352,9 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := ""
 				if role == "joiner" {
-					message = fmt.Sprintf("Joining from %s", address)
+					message = fmt.Sprintf("SST Join from %s", address)
 				} else if role == "donor" {
-					message = fmt.Sprintf("Donating to %s", address)
+					message = fmt.Sprintf("SST Donate to %s", address)
 				} else {
 					message = "Oops :-o"
 				}
