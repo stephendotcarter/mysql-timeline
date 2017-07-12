@@ -21,7 +21,7 @@ import (
 type Event struct {
 	Datetime      time.Time
 	GlobalOrderID int
-	Node          string
+	Node          int
 	Message       string
 	Raw           string
 }
@@ -36,7 +36,7 @@ type EventMatcher struct {
 	Get         func(*bufio.Scanner) *Event
 }
 
-func NewEvent(eventTime time.Time, node string, message string, raw []string) *Event {
+func NewEvent(eventTime time.Time, node int, message string, raw []string) *Event {
 	globalOrderID++
 
 	return &Event{
@@ -103,6 +103,25 @@ danger { color: #d9534f; font-weight: bold; }
 </table>
 {{end}}`
 
+	tmplTimelineCols = `{{define "Timeline"}}
+<style>
+body{ font-family: Courier New, Courier, monospace; }
+td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
+.color-node0 { background: #D9B3FF; }
+.color-node1 { background: #B3B3FF; }
+.color-node2 { background: #B3D9FF; }
+success { color: #5cb85c; font-weight: bold; }
+danger { color: #d9534f; font-weight: bold; }
+</style>
+<table border="1">
+<!--<thead>
+<th>Node</th><th>Date</th><th>Message</th>
+</thead>-->
+{{ range $event := .Timeline }}<tr class="color-{{ $event.Node }}"><td>{{ $event.Node }}</td><td>{{ $event.Datetime }}</td><td>{{ $event.Message }}</td></tr>
+{{ end }}
+</table>
+{{end}}`
+
 	// Event matchers for all know events
 	eventMatchers = []EventMatcher{
 		EventMatcher{
@@ -124,7 +143,7 @@ danger { color: #d9534f; font-weight: bold; }
 					message = message + printSuccess(matches[2])
 				}
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -167,7 +186,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := fmt.Sprintf("Component: %s, Members: %s", componentString, membersString)
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -193,7 +212,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := fmt.Sprintf("Group: %s\nLocal: %s", groupStateString, localStateString)
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -218,7 +237,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := fmt.Sprintf("Recovered position: %s", recoveredString)
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -233,7 +252,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := printDanger(`++++++++++ Interruptor ++++++++++`)
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -246,7 +265,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := printDanger("PID ended")
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -259,7 +278,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := printSuccess("Normal Shutdown")
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -272,7 +291,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := "MySQL startup"
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -285,7 +304,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := "InnoDB shutdown"
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -298,7 +317,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := "MySQL shutdown complete"
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -311,7 +330,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := "Primary not possible"
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -334,7 +353,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := fmt.Sprintf("WSREP view => %s", view)
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -359,7 +378,7 @@ danger { color: #d9534f; font-weight: bold; }
 					message = "Oops :-o"
 				}
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -376,7 +395,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := fmt.Sprintf("WSREPXid = %s", xid)
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -389,7 +408,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := printDanger("Node consistency compromized")
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -408,7 +427,7 @@ danger { color: #d9534f; font-weight: bold; }
 				//message := fmt.Sprintf("%s\n%s", error, code)
 				message := printDanger("Slave SQL Error")
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 		EventMatcher{
@@ -425,7 +444,7 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := fmt.Sprintf(printDanger("Fatal Error: %s"), fatalError)
 
-				return NewEvent(eventTime, "nodename", message, lines)
+				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
 	}
@@ -480,7 +499,7 @@ func scanLines(scanner *bufio.Scanner, count int) []string {
 	}
 }
 
-func getEventsFromNode(node string, filePath string) []*Event {
+func getEventsFromNode(node int, filePath string) []*Event {
 	var events []*Event
 
 	file, err := os.Open(filePath)
@@ -538,7 +557,7 @@ func main() {
 	var timeline []*Event
 
 	for i, filePath := range files {
-		node := fmt.Sprintf("node%d", i)
+		node := i
 		os.Stderr.WriteString("Parsing node\n")
 		timeline = append(timeline, getEventsFromNode(node, filePath)...)
 	}
@@ -551,9 +570,30 @@ func main() {
 		return timeline[i].Datetime.Before(timeline[j].Datetime)
 	})
 
-	os.Stderr.WriteString("Rendering\n")
-	html := renderHTML(timeline)
+	var timelineCols = make(map[string][][]*Event)
+	for _, event := range timeline {
+		//fmt.Println(event)
+		timeString := event.Datetime.Format("2006-01-02 15:04:05")
+		if _, ok := timelineCols[timeString]; !ok {
+			timelineCols[timeString] = make([][]*Event, 3)
+			timelineCols[timeString][0] = make([]*Event, 0)
+			timelineCols[timeString][1] = make([]*Event, 0)
+			timelineCols[timeString][2] = make([]*Event, 0)
+		}
 
-	os.Stderr.WriteString("Printing\n")
+		timelineCols[timeString][event.Node] = append(timelineCols[timeString][event.Node], event)
+	}
+
+	html := "<table border=\"1\">"
+	for i, row := range timelineCols {
+		html += fmt.Sprintf("<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>", i, len(row[0]), len(row[1]), len(row[2]))
+	}
+	html += "</table>"
 	fmt.Println(html)
+
+	//os.Stderr.WriteString("Rendering\n")
+	//html := renderHTML(timeline)
+
+	//os.Stderr.WriteString("Printing\n")
+	//fmt.Println(html)
 }
