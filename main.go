@@ -103,25 +103,6 @@ danger { color: #d9534f; font-weight: bold; }
 </table>
 {{end}}`
 
-	tmplTimelineCols = `{{define "Timeline"}}
-<style>
-body{ font-family: Courier New, Courier, monospace; }
-td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
-.color-node0 { background: #D9B3FF; }
-.color-node1 { background: #B3B3FF; }
-.color-node2 { background: #B3D9FF; }
-success { color: #5cb85c; font-weight: bold; }
-danger { color: #d9534f; font-weight: bold; }
-</style>
-<table border="1">
-<!--<thead>
-<th>Node</th><th>Date</th><th>Message</th>
-</thead>-->
-{{ range $event := .Timeline }}<tr class="color-{{ $event.Node }}"><td>{{ $event.Node }}</td><td>{{ $event.Datetime }}</td><td>{{ $event.Message }}</td></tr>
-{{ end }}
-</table>
-{{end}}`
-
 	// Event matchers for all know events
 	eventMatchers = []EventMatcher{
 		EventMatcher{
@@ -135,7 +116,7 @@ danger { color: #d9534f; font-weight: bold; }
 				matcher := regexp.MustCompile(` Shifting (.*) -> (.*) \(TO: ([0-9]*\))`)
 				matches := matcher.FindStringSubmatch(lines[0])
 
-				message := fmt.Sprintf("  %s => ", matches[1])
+				message := fmt.Sprintf("%s => ", matches[1])
 
 				if shiftState[matches[1]] > shiftState[matches[2]] {
 					message = message + printDanger(matches[2])
@@ -545,6 +526,68 @@ func renderHTML(timeline []*Event) string {
 	return html
 }
 
+func renderHTMLCols(timeline []*Event) string {
+
+	var timelineCols = make(map[string][][]*Event)
+
+	var tmplTimelineCols = `{{define "Timeline"}}
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<style>
+body{ font-family: Courier New, Courier, monospace; }
+td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
+.nowrap { white-space: nowrap; }
+success { color: #5cb85c; font-weight: bold; }
+danger { color: #d9534f; font-weight: bold; }
+</style>
+<table class="table table-bordered table-condensed">
+<!--<thead>
+<th>Node</th><th>Date</th><th>Message</th>
+</thead>-->
+{{ range $time, $nodes := .Timeline }}
+<tr>
+	<td class="nowrap">{{ $time }}</td>
+	{{ range $node := $nodes }}
+	<td>{{ range $event := $node }}{{ $event.Message }}
+{{ end }}</td>
+	{{ end }}
+</tr>
+{{ end }}
+</table>
+{{end}}`
+
+	for _, event := range timeline {
+		//fmt.Println(event)
+		timeString := event.Datetime.Format("2006-01-02 15:04:05")
+		if _, ok := timelineCols[timeString]; !ok {
+			timelineCols[timeString] = make([][]*Event, 3)
+			timelineCols[timeString][0] = make([]*Event, 0)
+			timelineCols[timeString][1] = make([]*Event, 0)
+			timelineCols[timeString][2] = make([]*Event, 0)
+		}
+
+		timelineCols[timeString][event.Node] = append(timelineCols[timeString][event.Node], event)
+	}
+
+	t, err := template.New("foo").Parse(tmplTimelineCols)
+	if err != nil {
+		panic(err)
+	}
+
+	type renderData struct {
+		Timeline map[string][][]*Event
+	}
+
+	data := renderData{
+		timelineCols,
+	}
+
+	var doc bytes.Buffer
+	t.ExecuteTemplate(&doc, "Timeline", data)
+	html := doc.String()
+	return html
+}
+
 func parseArgs() []string {
 	files := os.Args[1:]
 	return files
@@ -570,30 +613,9 @@ func main() {
 		return timeline[i].Datetime.Before(timeline[j].Datetime)
 	})
 
-	var timelineCols = make(map[string][][]*Event)
-	for _, event := range timeline {
-		//fmt.Println(event)
-		timeString := event.Datetime.Format("2006-01-02 15:04:05")
-		if _, ok := timelineCols[timeString]; !ok {
-			timelineCols[timeString] = make([][]*Event, 3)
-			timelineCols[timeString][0] = make([]*Event, 0)
-			timelineCols[timeString][1] = make([]*Event, 0)
-			timelineCols[timeString][2] = make([]*Event, 0)
-		}
+	os.Stderr.WriteString("Rendering\n")
+	html := renderHTMLCols(timeline)
 
-		timelineCols[timeString][event.Node] = append(timelineCols[timeString][event.Node], event)
-	}
-
-	html := "<table border=\"1\">"
-	for i, row := range timelineCols {
-		html += fmt.Sprintf("<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>", i, len(row[0]), len(row[1]), len(row[2]))
-	}
-	html += "</table>"
+	os.Stderr.WriteString("Printing\n")
 	fmt.Println(html)
-
-	//os.Stderr.WriteString("Rendering\n")
-	//html := renderHTML(timeline)
-
-	//os.Stderr.WriteString("Printing\n")
-	//fmt.Println(html)
 }
