@@ -116,7 +116,7 @@ danger { color: #d9534f; font-weight: bold; }
 				matcher := regexp.MustCompile(` Shifting (.*) -> (.*) \(TO: ([0-9]*\))`)
 				matches := matcher.FindStringSubmatch(lines[0])
 
-				message := fmt.Sprintf("Shifting %s => ", matches[1])
+				message := fmt.Sprintf("Shifting: %s to ", matches[1])
 
 				if shiftState[matches[1]] > shiftState[matches[2]] {
 					message = message + printDanger(matches[2])
@@ -332,7 +332,13 @@ danger { color: #d9534f; font-weight: bold; }
 					view = matches[1]
 				}
 
-				message := fmt.Sprintf("Cluster view => %s", view)
+				if view == "NON_PRIM" {
+					view = printDanger(view)
+				} else if view == "PRIM" {
+					view = printSuccess(view)
+				}
+
+				message := fmt.Sprintf("Cluster view: %s", view)
 
 				return NewEvent(eventTime, 0, message, lines)
 			},
@@ -352,9 +358,9 @@ danger { color: #d9534f; font-weight: bold; }
 
 				message := ""
 				if role == "joiner" {
-					message = fmt.Sprintf("SST Join from %s", address)
+					message = fmt.Sprintf("Node %s joining via SST", address)
 				} else if role == "donor" {
-					message = fmt.Sprintf("SST Donate to %s", address)
+					message = fmt.Sprintf("Node %s donating via SST", address)
 				} else {
 					message = "Oops :-o"
 				}
