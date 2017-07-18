@@ -231,7 +231,7 @@ danger { color: #d9534f; font-weight: bold; }
 				lines := scanLines(scanner, 1)
 				eventTime := getTimeWsrepSst(lines[0])
 
-				message := printDanger(`++++++++++ Interruptor ++++++++++`)
+				message := printDanger(`++++++++++ INTERRUPTOR ++++++++++`)
 
 				return NewEvent(eventTime, 0, message, lines)
 			},
