@@ -434,6 +434,23 @@ danger { color: #d9534f; font-weight: bold; }
 				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
+		EventMatcher{
+			"Assertion Failure",
+			"InnoDB: Assertion failure",
+			func(scanner *bufio.Scanner) *Event {
+				// 2017-06-22 15:51:49 7f99b39b7700  InnoDB: Assertion failure in thread 140298120034048 in file pars
+				lines := scanLines(scanner, 2)
+				eventTime := getTimeDefault(lines[0])
+
+				matcher := regexp.MustCompile(` InnoDB: (.*)`)
+				matches := matcher.FindStringSubmatch(lines[0])
+				assertion := printDanger(matches[1])
+
+				message := fmt.Sprintf("InnoDB: %s", assertion)
+
+				return NewEvent(eventTime, 0, message, lines)
+			},
+		},
 	}
 )
 
