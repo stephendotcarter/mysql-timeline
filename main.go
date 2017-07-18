@@ -451,6 +451,19 @@ danger { color: #d9534f; font-weight: bold; }
 				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
+		EventMatcher{
+			"Bootstrap",
+			"WSREP: 'wsrep-new-cluster' option used",
+			func(scanner *bufio.Scanner) *Event {
+				// 2017-06-14 14:21:49 140348199405440 [Note] WSREP: 'wsrep-new-cluster' option used, bootstrapping the cluster
+				lines := scanLines(scanner, 1)
+				eventTime := getTimeDefault(lines[0])
+
+				message := fmt.Sprintf(printDanger("++++++++++ BOOTSTRAPPING ++++++++++"))
+
+				return NewEvent(eventTime, 0, message, lines)
+			},
+		},
 	}
 )
 
