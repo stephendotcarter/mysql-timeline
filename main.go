@@ -464,6 +464,32 @@ danger { color: #d9534f; font-weight: bold; }
 				return NewEvent(eventTime, 0, message, lines)
 			},
 		},
+		EventMatcher{
+			"Failed IST",
+			"WSREP: Failed to prepare for incremental state transfer",
+			func(scanner *bufio.Scanner) *Event {
+				// 2017-05-06 15:15:24 140137773021952 [Warning] WSREP: Failed to prepare for incremental state transfer: Local state UUID (00000000-0000-0000-0000-000000000000) does not match group state UUID (f3d1aa70-31a3-11e7-908c-f7a5ad9e63b1): 1 (Operation not permitted)
+				lines := scanLines(scanner, 1)
+				eventTime := getTimeDefault(lines[0])
+
+				message := fmt.Sprintf(printDanger("Failed to prepare for IST"))
+
+				return NewEvent(eventTime, 0, message, lines)
+			},
+		},
+		EventMatcher{
+			"IST Received",
+			"WSREP: IST received:",
+			func(scanner *bufio.Scanner) *Event {
+				// 2017-05-06 15:15:24 140137773021952 [Warning] WSREP: Failed to prepare for incremental state transfer: Local state UUID (00000000-0000-0000-0000-000000000000) does not match group state UUID (f3d1aa70-31a3-11e7-908c-f7a5ad9e63b1): 1 (Operation not permitted)
+				lines := scanLines(scanner, 1)
+				eventTime := getTimeDefault(lines[0])
+
+				message := fmt.Sprintf(printSuccess("IST Received"))
+
+				return NewEvent(eventTime, 0, message, lines)
+			},
+		},
 	}
 )
 
