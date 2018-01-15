@@ -567,6 +567,13 @@ func getEventsFromNode(node int, filePath string) []*Event {
 	return events
 }
 
+func filterFormatAnchor(anchor string) string {
+	anchor = strings.Replace(anchor, "-", "", -1)
+	anchor = strings.Replace(anchor, ":", "", -1)
+	anchor = strings.Replace(anchor, " ", "_", -1)
+	return anchor
+}
+
 func renderHTML(timeline []*Event) string {
 	html := ""
 	t, err := template.New("foo").Parse(tmplTimeline)
@@ -588,34 +595,44 @@ func renderHTML(timeline []*Event) string {
 	return html
 }
 
-func renderHTMLCols(timeline []*Event) string {
+func renderHTMLCols(timeline []*Event, files []string) string {
 
 	var timelineCols = make(map[string][][]*Event)
 
 	var tmplTimelineCols = `{{define "Timeline"}}
-<!-- Latest compiled and minified CSS -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<html>
+<head>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
 <style>
 body{ font-family: Courier New, Courier, monospace; }
+th { font-size: 10pt; vertical-align: top; }
 td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
 .nowrap { white-space: nowrap; }
 success { color: #5cb85c; font-weight: bold; }
 danger { color: #d9534f; font-weight: bold; }
 </style>
+</head>
+<body>
 <table class="table table-bordered table-condensed">
-<!--<thead>
-<th>Node</th><th>Date</th><th>Message</th>
-</thead>-->
+<thead>
+<th class="align-top">Timestamp</th>
+{{ range $file := .Files }}
+<th class="align-top">{{ $file }}</th>
+{{ end }}
+</thead>
+<tbody>
 {{ range $time, $nodes := .Timeline }}
 <tr>
-	<td class="nowrap">{{ $time }}</td>
-	{{ range $node := $nodes }}
-	<td>{{ range $event := $node }}{{ $event.Message }}
-{{ end }}</td>
-	{{ end }}
+<td class="nowrap"><a name="{{ $time | FormatAnchor }}" href="#{{ $time | FormatAnchor }}">{{ $time }}</td>
+{{ range $node := $nodes }}
+<td>{{ range $event := $node }}{{ $event.Message }}<br>{{ end }}</td>
+{{ end }}
 </tr>
 {{ end }}
+</tbody>
 </table>
+</body>
+</html>
 {{end}}`
 
 	for _, event := range timeline {
@@ -631,17 +648,23 @@ danger { color: #d9534f; font-weight: bold; }
 		timelineCols[timeString][event.Node] = append(timelineCols[timeString][event.Node], event)
 	}
 
-	t, err := template.New("foo").Parse(tmplTimelineCols)
+	filters := template.FuncMap{
+		"FormatAnchor": filterFormatAnchor,
+	}
+
+	t, err := template.New("foo").Funcs(filters).Parse(tmplTimelineCols)
 	if err != nil {
 		panic(err)
 	}
 
 	type renderData struct {
 		Timeline map[string][][]*Event
+		Files    []string
 	}
 
 	data := renderData{
 		timelineCols,
+		files,
 	}
 
 	var doc bytes.Buffer
@@ -676,7 +699,7 @@ func main() {
 	})
 
 	os.Stderr.WriteString("Rendering\n")
-	html := renderHTMLCols(timeline)
+	html := renderHTMLCols(timeline, files)
 
 	os.Stderr.WriteString("Printing\n")
 	fmt.Println(html)
