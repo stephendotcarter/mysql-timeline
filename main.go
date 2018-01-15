@@ -682,7 +682,7 @@ func main() {
 
 	for i, filePath := range files {
 		node := i
-		os.Stderr.WriteString("Parsing node\n")
+		os.Stderr.WriteString(fmt.Sprintf("Parsing file %s\n", filePath))
 		timeline = append(timeline, getEventsFromNode(node, filePath)...)
 	}
 
