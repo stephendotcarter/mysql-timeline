@@ -636,13 +636,9 @@ danger { color: #d9534f; font-weight: bold; }
 {{end}}`
 
 	for _, event := range timeline {
-		//fmt.Println(event)
 		timeString := event.Datetime.Format("2006-01-02 15:04:05")
 		if _, ok := timelineCols[timeString]; !ok {
-			timelineCols[timeString] = make([][]*Event, 3)
-			timelineCols[timeString][0] = make([]*Event, 0)
-			timelineCols[timeString][1] = make([]*Event, 0)
-			timelineCols[timeString][2] = make([]*Event, 0)
+			timelineCols[timeString] = make([][]*Event, len(files))
 		}
 
 		timelineCols[timeString][event.Node] = append(timelineCols[timeString][event.Node], event)
