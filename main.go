@@ -621,8 +621,8 @@ var lastSelectedRow;
 var trs ;
 
 function triggers() {
-$('tr').click(function(){
-        if (window.event.shiftKey) {
+$('tr').click(function(event){
+        if (event.shiftKey) {
             selectRowsBetweenIndexes([lastSelectedRow.rowIndex, this.rowIndex])
         } else {
                 clearAll();
