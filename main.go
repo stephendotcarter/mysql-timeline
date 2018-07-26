@@ -602,7 +602,7 @@ func renderHTMLCols(timeline []*Event, files []string) string {
 	var tmplTimelineCols = `{{define "Timeline"}}
 <html>
 <head>
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 <style>
 body{ font-family: Courier New, Courier, monospace; }
 th { font-size: 10pt; vertical-align: top; }
@@ -611,8 +611,77 @@ td { font-size: 10pt; white-space: pre-wrap; vertical-align: top; }
 success { color: #5cb85c; font-weight: bold; }
 danger { color: #d9534f; font-weight: bold; }
 </style>
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+<script>
+
+var lastSelectedRow;
+var trs ;
+
+function triggers() {
+$('tr').click(function(event){
+        if (event.shiftKey) {
+            selectRowsBetweenIndexes([lastSelectedRow.rowIndex, this.rowIndex])
+        } else {
+                clearAll();
+                toggleRow(this)
+        }
+        //$(this).addClass("out");
+        //$(this).removeClass("in");
+});
+}
+
+function toggleRow(row) {
+    if ( !$(row).hasClass("table-active")) {
+        $(row).addClass("table-active");
+    }
+    lastSelectedRow = row;
+}
+
+function selectRowsBetweenIndexes(indexes) {
+    indexes.sort(function(a, b) {
+        return a - b;
+    });
+
+    for (var i = indexes[0]; i <= indexes[1]; i++) {
+        $(trs[i]).addClass('table-active');
+    }
+}
+
+function hideSelected() {
+        for (var i = 0; i < trs.length; i++) {
+                if ( $(trs[i]).hasClass("table-active") ) {
+                        $(trs[i]).removeClass("show");
+                }
+        }
+        clearAll();
+}
+
+function clearAll() {
+        for (var i = 0; i < trs.length; i++) {
+                $(trs[i]).removeClass("table-active");
+        }
+}
+
+function expandAll() {
+        for (var i = 0; i < trs.length; i++) {
+                if ( !$(trs[i]).hasClass("show") ) {
+                        $(trs[i]).addClass('show');
+                }
+        }
+}
+
+function populateTRS() {
+        trs = document.getElementsByTagName('tr');
+}
+</script>
+
 </head>
-<body>
+<body onload="triggers(); populateTRS(); expandAll();">
+<button type="button" class="btn btn-info"  onclick="hideSelected();">Hide Selected</button>
+<button type="button" class="btn btn-info"  onclick="expandAll();">Expand</button>
 <table class="table table-bordered table-condensed">
 <thead>
 <th class="align-top">Timestamp</th>
@@ -622,7 +691,7 @@ danger { color: #d9534f; font-weight: bold; }
 </thead>
 <tbody>
 {{ range $time, $nodes := .Timeline }}
-<tr>
+<tr class="collapse">
 <td class="nowrap"><a name="{{ $time | FormatAnchor }}" href="#{{ $time | FormatAnchor }}">{{ $time }}</td>
 {{ range $node := $nodes }}
 <td>{{ range $event := $node }}{{ $event.Message }}<br>{{ end }}</td>
